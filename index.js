@@ -1,4 +1,5 @@
 const express = require('express')
+const axios = require('axios')
 
 const app = express()
 
@@ -35,17 +36,119 @@ const PromiseSimplified = require('./PromiseSimplified')
 
 //Handling async code using Promises
 
-function missionPromise (){
-    return new Promise((resolve, reject) => {
+function missionPromise (message){
+    return new PromiseSimplified((resolve, reject) => {
         setTimeout(() => {
-            let secretDocs = "Super SECRET!!!!!";
-            resolve(secretDocs)
+            if(!message){
+                reject("There were no instructions")
+            } else {
+                let secretDocs = message;
+                resolve(secretDocs)
+            }
         }, 2000)
     })
 }
 
 
-missionPromise().then((result) => {console.log(result)})
+// missionPromise("Top secret mission instructions!")
+//     .then((result) => {
+//         console.log(result)
+//     })
+//     .catch(error => {
+//         console.log(error)
+//     })
+
+//Fetching Pokemon from the Pokemon API
+function getApiData(url){
+    let pokemon = new PromiseSimplified((resolve, reject) => {
+        axios.get(url)
+            .then(result => {
+                resolve(result.data)
+            })
+            .catch(err => {
+                reject("There was a problem")
+            })
+    })
+
+    return pokemon;
+}
+
+// getApiData("https://pokeapi.co/api/v2/pokemon/bulbasaur")
+//     .then(result => {
+//         console.log(result)
+//     })
+//     .catch(err => {
+//         console.log(err)
+//     })
+
+//Fetching several individual Pokemon at once and resolving them using Promise.all
+let pokemonUrlArray = [
+    "https://pokeapi.co/api/v2/pokemon/bulbasaur",
+    "https://pokeapi.co/api/v2/pokemon/ivysaur",
+    "https://pokeapi.co/api/v2/pokemon/charmander"
+]
+
+function getSpecificPokemon(pokemonUrls){
+    let promiseArray = []
+    pokemonUrls.forEach(val => {
+        let promise = new Promise((resolve, reject) => {
+           
+            axios.get(val)
+            .then(response => {
+                resolve(response.data.species)
+            })
+            .catch(err => {
+                reject("There was an issue")
+            })
+        })
+
+        promiseArray.push(promise)
+    })
+    return promiseArray;
+}
+
+let pokemonPromiseArray = getSpecificPokemon(pokemonUrlArray)
+
+Promise.all(pokemonPromiseArray)
+    .then(results => {
+        console.log(results)
+    })
+    .catch(err => {
+        console.log("Whoopsie!")
+    })
+
+//console.log(pokemonPromiseArray)
+
+
+
+//Using Promise.all
+
+function ponyGreeting(name, time){
+    let greetPromise = new Promise((resolve, reject) => {
+        if(name && time){
+            let greeting = ''
+            setTimeout(() => {
+                greeting = `Hi, I'm ${name}!`
+                resolve(greeting)
+            }, time)
+        } else {
+            reject("Insufficient information was provided")
+        }
+    })
+    return greetPromise;
+}
+
+
+let promiseArray = [];
+promiseArray.push(ponyGreeting("Twilight", 1000).catch(err => {console.log(err)}))
+promiseArray.push(ponyGreeting("Pinkie", 500).catch(err => {console.log(err)}))
+promiseArray.push(ponyGreeting("Fluttershy", 3000).catch(err => {console.log(err)}))
+promiseArray.push(ponyGreeting("Apple Jack", 2000).catch(err => {console.log(err)}))
+
+Promise.all(promiseArray)
+    .then(array => {
+        console.log(array)
+    })
 
 
 
